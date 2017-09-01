@@ -10,11 +10,12 @@ namespace Ublaboo\DataGrid\DataSource;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
+use Ublaboo\DataGrid\AggregationFunction\IAggregatable;
 use Ublaboo\DataGrid\Filter;
 use Ublaboo\DataGrid\Utils\DateTimeHelper;
 use Ublaboo\DataGrid\Utils\Sorting;
 
-final class DoctrineCollectionDataSource extends FilterableDataSource implements IDataSource
+final class DoctrineCollectionDataSource extends FilterableDataSource implements IDataSource, IAggregatable
 {
 
 	/**
@@ -120,6 +121,7 @@ final class DoctrineCollectionDataSource extends FilterableDataSource implements
 	 */
 	public function applyFilterDateRange(Filter\FilterDateRange $filter)
 	{
+		$conditions = $filter->getCondition();
 		$values = $conditions[$filter->getColumn()];
 
 		if ($value_from = $values['from']) {
@@ -147,6 +149,7 @@ final class DoctrineCollectionDataSource extends FilterableDataSource implements
 	 */
 	public function applyFilterRange(Filter\FilterRange $filter)
 	{
+		$conditions = $filter->getCondition();
 		$values = $conditions[$filter->getColumn()];
 
 		if ($value_from = $values['from']) {
@@ -171,12 +174,12 @@ final class DoctrineCollectionDataSource extends FilterableDataSource implements
 		$exprs = [];
 
 		foreach ($filter->getCondition() as $column => $value) {
-			if($filter->isExactSearch()) {
+			if ($filter->isExactSearch()) {
 				$exprs[] = Criteria::expr()->eq($column, $value);
 				continue;
 			}
 
-			if ($filter->hasSplitWordsSearch() === FALSE) {
+			if ($filter->hasSplitWordsSearch() === false) {
 				$words = [$value];
 			} else {
 				$words = explode(' ', $value);
@@ -261,4 +264,13 @@ final class DoctrineCollectionDataSource extends FilterableDataSource implements
 		return $this;
 	}
 
+
+	/**
+	 * @param  callable  $aggregationCallback
+	 * @return void
+	 */
+	public function processAggregation(callable $aggregationCallback)
+	{
+		call_user_func($aggregationCallback, clone $this->data_source);
+	}
 }
